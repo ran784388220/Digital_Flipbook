@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>Document</title>
+      <script src="js/jquery.js"></script>
+
+  <script type="text/javascript">
+var clickX = new Array();
+var clickY = new Array();
+var clickDrag = new Array();
+var paint;
+var clickTool = new Array();
+var curTool = "crayon";
+var clickSize = new Array();
+var curSize = "normal";
+var clickColor = new Array();
+var curColor = "black";
+var ctr=0;
+
+
+function canvasDisplay()
+{
+	
+	var animationDiv = document.getElementById("animationDiv");
+	var canvasNext = document.getElementById('canvas0').cloneNode(true);
+	var i;
+	for(i = 0; i< ctr;i++)
+	{
+		var j = i + 1;
+		//alert(canvasOri);
+    alert(i+" "+j);
+		var canvasD = document.getElementById("canvas" + j);
+		var canvasO = document.getElementById("canvas" + i);
+		var canvasDiv = document.getElementById("canvasDiv");
+		//canvasDiv.replaceChild(canvasD,canvasO);
+		
+		//var canvasNext = canvasO.cloneNode(true);
+		var context = canvasNext.getContext("2d");
+		context.drawImage(canvasO,0,0);
+		animationDiv.appendChild(canvasNext);
+		//var t=setTimeout(function(){alert(i)},1000);
+
+	}
+
+}
+
+  function canvasCreate()
+  {
+  var canvasDiv = document.getElementById('canvasDiv');
+
+canvas = document.createElement('canvas');
+canvas.setAttribute('width', '480px');
+canvas.setAttribute('height', '320px');
+canvas.setAttribute('id', 'canvas'+ctr);
+canvas.setAttribute('style','border:1px solid #000000;');
+canvas.addEventListener("touchstart", touchstart, false);
+canvas.addEventListener("touchmove", touchmove, false);
+canvas.addEventListener("touchend", touchend, false);
+canvas.addEventListener("touchleave", touchleave, false);
+canvasDiv.appendChild(canvas);
+var content = '<p><b> Page ' + (ctr+1) + '</b></p>';
+$(content).appendTo("#canvasDiv");
+
+if(typeof G_vmlCanvasManager != 'undefined') {
+  canvas = G_vmlCanvasManager.initElement(canvas);
+}
+context = canvas.getContext("2d");
+context.fillStyle = "rgba(0, 0, 0, 0.5)";
+
+$('#canvas'+ctr).mousedown(function(e){
+  var mouseX = e.pageX - canvas.offsetLeft;
+  var mouseY = e.pageY - canvas.offsetTop;
+    
+  paint = true;
+  addClick(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop);
+  redraw();
+});
+//movermove
+$('#canvas'+ctr).mousemove(function(e){
+  if(paint){
+    addClick(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop, true);
+    redraw();
+  }
+});
+
+$('#canvas'+ctr).mouseup(function(e){
+  paint = false;
+});
+$('#canvas'+ctr).mouseleave(function(e){
+  paint = false;
+});
+ctr++;
+}
+function touchstart(e)
+  {
+     e.preventDefault();
+    var mouseX = e.targetTouches[0].pageX - canvas.offsetLeft;
+  var mouseY = e.targetTouches[0].pageY - canvas.offsetTop;
+    
+  paint = true;
+  addClick(e.targetTouches[0].pageX - canvas.offsetLeft, e.targetTouches[0].pageY - canvas.offsetTop);
+  redraw();
+}
+//movermove
+function touchmove(e)
+{
+  if(paint){
+    addClick(e.targetTouches[0].pageX - canvas.offsetLeft, e.targetTouches[0].pageY - canvas.offsetTop, true);
+    redraw();
+  }
+}
+
+function touchend(e)
+{
+  paint = false;
+}
+
+function touchleave(e){
+  paint = false;
+}
+//mouse down
+function eraser()
+{
+  curTool="eraser";
+}
+
+function pencil()
+{
+  curTool="pencil";
+}
+function addClick(x, y, dragging)
+{
+  clickX.push(x);
+  clickY.push(y);
+  clickDrag.push(dragging);
+  if(curTool == "eraser"){
+    clickColor.push("#FF9900");
+  
+  }
+  else 
+  {
+      clickColor.push("black");
+      
+    }
+  console.log(curTool);
+    console.log(curColor);
+
+}
+
+
+function redraw(){
+  
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+  
+  context.strokeStyle = "#df4b26";
+  context.lineJoin = "round";
+  context.lineWidth = 5;
+      
+  for(var i=0; i < clickX.length; i++) {    
+    context.beginPath();
+    if(clickDrag[i] && i){
+      context.moveTo(clickX[i-1], clickY[i-1]);
+     }else{
+       context.moveTo(clickX[i]-1, clickY[i]);
+     }
+     context.lineTo(clickX[i], clickY[i]);
+     context.closePath();
+     context.strokeStyle = clickColor[i];
+     context.lineWidth = clickSize[i];
+     context.stroke();
+  }
+}
+
+  </script>
+
+ </head>
+  <body onload="canvasCreate()"  style="background-color:#FF9900;" align="center">
+    <h2><b>Digital Flipbook</b></h2>
+    <div>
+  <button id="pencil" onclick="pencil()"><img src="http://beverlyspeaks.com/wp-content/uploads/2012/10/pencil.png" alt="Smiley face" height="42" width="50"></button>
+  <button id="eraser" onclick="eraser()"><img src="https://addons.cdn.mozilla.net/img/uploads/previews/full/40/40349.png?modified=1331247702" alt="Smiley face" height="42" width="42">
+</button>
+  <button id="newpage" onclick="canvasCreate()"><img src="https://cdn1.iconfinder.com/data/icons/30_Free_Black_ToolBar_Icons/40/Black_New-Page.png" alt="Smiley face" height="42" width="42">
+</button>
+
+  <button id="animation" onclick="canvasDisplay()"><img src="http://medicine.utah.edu/images/play_button.png" alt="Smiley face" height="42" width="42">
+</button>
+
+<br>
+<br>
+	<div id="animationDiv"></div>
+  <div id="canvasDiv" ></div>
+</div>
+
+ </body>
+</html>

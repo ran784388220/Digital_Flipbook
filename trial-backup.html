@@ -1,0 +1,528 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Digital Flipbook</title>
+    <!-- Bootstrap core CSS -->
+    <script src="js/jquery.js"></script>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <script type="text/javascript" src="js/LZWEncoder.js"></script>
+    <script type="text/javascript" src="js/NeuQuant.js"></script>
+    <script type="text/javascript" src="js/GIFEncoder.js"></script>
+    <script type="text/javascript" src="js/b64.js"></script>
+
+
+    <!-- Custom styles for this template -->
+    <link href="css/jumbotron-narrow.css" rel="stylesheet">    
+    <script type="text/javascript">
+var clickX = new Array();
+var clickY = new Array();
+var clickDrag = new Array();
+var paint;
+var clickTool = new Array();
+var curTool = "crayon";
+var clickSize = new Array();
+var curSize = "normal";
+var clickColor = new Array();
+var curColor = "black";
+var ctr=0;
+
+  var isMobile = {
+    Android: function() {
+        return navigator.userAgent.match(/Android/i);
+    },
+    BlackBerry: function() {
+        return navigator.userAgent.match(/BlackBerry/i);
+    },
+    iOS: function() {
+        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+    },
+    Opera: function() {
+        return navigator.userAgent.match(/Opera Mini/i);
+    },
+    Windows: function() {
+        return navigator.userAgent.match(/IEMobile/i);
+    },
+    any: function() {
+        return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+    }
+};
+
+  function canvasCreate()
+  {
+$("#saveGIF").empty();
+  var canvasDiv = document.getElementById('canvasDiv');
+  canvas = document.createElement('canvas');
+
+  canvas.setAttribute('width', '480px');
+  canvas.setAttribute('height', '320px');
+canvas.setAttribute('id', 'canvas'+ctr);
+canvas.setAttribute('style','border:1px solid #000000;background-color:#FF8E00;');
+canvas.addEventListener("touchstart", touchstart, false);
+canvas.addEventListener("touchmove", touchmove, false);
+canvas.addEventListener("touchend", touchend, false);
+canvas.addEventListener("touchleave", touchleave, false);
+
+
+canvasDiv.insertBefore(canvas,canvasDiv.firstChild);
+var content = '<br><br/><br><br/><p><b> Page ' + (ctr+1) + '</b></p>';
+$(content).prependTo("#canvasDiv");
+if(typeof G_vmlCanvasManager != 'undefined') {
+  canvas = G_vmlCanvasManager.initElement(canvas);
+}
+context = canvas.getContext("2d");
+context.fillStyle   = '#FF8E00'; // set canvas background color
+context.fillRect(0,0, canvas.width,canvas.height);
+   
+//context.clearRect(0,0,canvas.width,canvas.height);
+//context.save();
+
+if(ctr>0)
+{
+   var sourceCanvas = document.getElementById('canvas'+(ctr-1));
+   console.log(sourceCanvas);
+   sourcecontext = sourceCanvas.getContext("2d");
+   context.drawImage(sourceCanvas, 0, 0);
+   context.fillStyle   = '#FF8E00'; // set canvas background color
+   context.fillRect(0,0, canvas.width,canvas.height);
+   //context.clearRect(0,0,canvas.width,canvas.height);
+   clickX = [];
+   clickY = [];
+   clickDrag=[];
+   clickColor=[];
+   clickSize=[];
+
+}
+//context.fillStyle = "rgba(0, 0, 0, 0.5)";
+$('#canvas'+ctr).mousedown(function(e){
+
+  var mouseX = e.pageX - canvas.offsetLeft;
+  var mouseY = e.pageY - canvas.offsetTop;
+    
+  paint = true;
+  addClick(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop);
+  redraw();
+});
+//movermove
+$('#canvas'+ctr).mousemove(function(e){
+  if(paint){
+    addClick(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop, true);
+    redraw();
+  }
+});
+
+$('#canvas'+ctr).mouseup(function(e){
+  paint = false;
+});
+$('#canvas'+ctr).mouseleave(function(e){
+  paint = false;
+});
+ctr++;
+setToYellow_newpage();
+}
+function setToYellow_newpage( ) 
+{ 
+ document.getElementById('newpage').style.backgroundColor = "#FFFF00"; 
+ document.getElementById('eraser').style.backgroundColor = "#E6E6E6"; 
+ document.getElementById('pencil').style.backgroundColor = "#E6E6E6"; 
+ document.getElementById('reset').style.backgroundColor = "#E6E6E6"; 
+       document.getElementById('animate1').style.backgroundColor = "#E6E6E6";
+      document.getElementById('save').style.backgroundColor = "#E6E6E6";
+      document.getElementById('reload').style.backgroundColor = "#E6E6E6";
+
+} 
+function touchstart(e)
+  {
+     e.preventDefault();
+    var mouseX = e.targetTouches[0].pageX - canvas.offsetLeft;
+  var mouseY = e.targetTouches[0].pageY - canvas.offsetTop;
+    
+  paint = true;
+  addClick(e.targetTouches[0].pageX - canvas.offsetLeft, e.targetTouches[0].pageY - canvas.offsetTop);
+  redraw();
+}
+//movermove
+function touchmove(e)
+{
+  if(paint){
+    addClick(e.targetTouches[0].pageX - canvas.offsetLeft, e.targetTouches[0].pageY - canvas.offsetTop, true);
+    redraw();
+  }
+}
+
+
+function touchend(e)
+{
+  paint = false;
+}
+
+function touchleave(e){
+  paint = false;
+}
+//mouse down
+function eraser()
+{
+  curTool="eraser";
+  setToYellow_eraser();
+}
+
+function setToYellow_eraser() 
+{ 
+ document.getElementById('eraser').style.backgroundColor = "#FFFF00"; 
+  document.getElementById('pencil').style.backgroundColor = "#E6E6E6"; 
+  document.getElementById('newpage').style.backgroundColor = "#E6E6E6"; 
+  document.getElementById('reset').style.backgroundColor = "#E6E6E6"; 
+  document.getElementById('save').style.backgroundColor = "#E6E6E6";
+        document.getElementById('animate1').style.backgroundColor = "#E6E6E6";
+        document.getElementById('reload').style.backgroundColor = "#E6E6E6";
+
+} 
+
+function pencil()
+{
+  curTool="pencil";
+  setToYellow_pen();
+  
+}
+function setToYellow_pen( ) 
+{ 
+ document.getElementById('pencil').style.backgroundColor = "#FFFF00"; 
+  document.getElementById('eraser').style.backgroundColor = "#E6E6E6";
+   document.getElementById('newpage').style.backgroundColor = "#E6E6E6"; 
+    document.getElementById('reset').style.backgroundColor = "#E6E6E6";  
+      document.getElementById('save').style.backgroundColor = "#E6E6E6";
+      document.getElementById('animate1').style.backgroundColor = "#E6E6E6";
+      document.getElementById('reload').style.backgroundColor = "#E6E6E6";
+
+}
+
+function addClick(x, y, dragging)
+{
+  clickX.push(x);
+  clickY.push(y);
+  clickDrag.push(dragging);
+  if(curTool == "eraser"){
+    clickColor.push("#FF8E00");
+    clickSize.push(20);
+  }
+  else 
+  {
+      clickColor.push("black");
+      clickSize.push(5);
+    }
+
+}
+j=0;
+function animate()
+{     j=0;
+      
+      $("#saveGIF").empty();
+  $("#preview").remove();
+  var canvasDiv = document.getElementById('animate');
+
+canvas = document.createElement('canvas');
+canvas.setAttribute('width', '480px');
+canvas.setAttribute('height', '320px');
+canvas.setAttribute('id', 'preview');
+canvasDiv.appendChild(canvas);
+  if(j<=ctr)
+   {
+    previewCanvas();
+
+  }
+  setToYellow4();
+}
+function setToYellow4 ( ) 
+{ 
+        document.getElementById('animate1').style.backgroundColor = "#FFFF00";
+        document.getElementById('pencil').style.backgroundColor = "#E6E6E6"; 
+        document.getElementById('eraser').style.backgroundColor = "#E6E6E6"; 
+        document.getElementById('newpage').style.backgroundColor = "#E6E6E6"; 
+        document.getElementById('reset').style.backgroundColor = "#E6E6E6"; 
+        document.getElementById('save').style.backgroundColor = "#E6E6E6";
+        document.getElementById('reload').style.backgroundColor = "#E6E6E6";
+
+}
+function previewCanvas()
+{
+ $("#animate").empty();   
+      //context.fillRect(0,0,canvas.width, canvas.height); //GIF can't do transparent so do white
+      j=0;
+      if(j>=0)
+      {
+      sourceCanvas = document.getElementById('canvas'+j);
+      sourcecontext = sourceCanvas.getContext("2d");
+      console.log(sourceCanvas);
+      var encoder = new GIFEncoder();
+      encoder.setRepeat(0); //auto-loop
+      encoder.setDelay(1000);
+      encoder.start();
+      //var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+      while(j<ctr)
+      {
+      sourceCanvas = document.getElementById('canvas'+j);
+      sourcecontext = sourceCanvas.getContext("2d");
+      encoder.addFrame(sourcecontext); 
+      j++;
+      console.log(j);
+      }
+      encoder.finish();
+      //document.getElementById('canvasImg').src = 'data:image/gif;base64,'+encode64(encoder.stream().getData());      
+      }
+  encoder.finish();
+  
+
+  var content = '<img id="canvasAnimate">';
+  $(content).prependTo("#animate");
+  document.getElementById('canvasAnimate').src = 'data:image/gif;base64,'+encode64(encoder.stream().getData());
+}
+
+
+function redraw(){
+  
+  //context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+  context.strokeStyle = "#df4b26";
+  context.lineJoin = "round";
+  for(var i=0; i < clickX.length; i++) {    
+    context.beginPath();
+    if(clickDrag[i] && i){
+      context.moveTo(clickX[i-1], clickY[i-1]);
+     }else{
+       context.moveTo(clickX[i]-1, clickY[i]);
+     }
+     context.lineTo(clickX[i], clickY[i]);
+     context.closePath();
+     context.strokeStyle = clickColor[i];
+     context.lineWidth = clickSize[i];
+     context.stroke();
+  }
+}
+function reload()
+  {
+    a=confirm("Do you want to start a new Flipbook?");
+    if(a==true)
+      {
+       $("#canvasDiv").empty();
+       $("#saveGIF").empty();
+    ctr=0;
+    canvasCreate();
+    clickX = [];
+   clickY = [];
+   clickDrag=[];
+   clickColor=[];
+   clickSize=[];
+   curTool="crayon"; 
+      }
+setToYellow3();
+    
+  }
+  function setToYellow3 ( ) 
+{ 
+ document.getElementById('reload').style.backgroundColor = "#FFFF00"; 
+ document.getElementById('pencil').style.backgroundColor = "#E6E6E6"; 
+  document.getElementById('eraser').style.backgroundColor = "#E6E6E6"; 
+   document.getElementById('newpage').style.backgroundColor = "#E6E6E6"; 
+    document.getElementById('save').style.backgroundColor = "#E6E6E6";
+        document.getElementById('animate1').style.backgroundColor = "#E6E6E6";
+        document.getElementById('reset').style.backgroundColor = "#E6E6E6";
+
+
+} 
+  function save()
+  {
+  $("#saveGIF").empty();   
+      //context.fillRect(0,0,canvas.width, canvas.height); //GIF can't do transparent so do white
+      j=0;
+      if(j>=0)
+      {
+      sourceCanvas = document.getElementById('canvas'+j);
+      sourcecontext = sourceCanvas.getContext("2d");
+      console.log(sourceCanvas);
+      var encoder = new GIFEncoder();
+      encoder.setRepeat(0); //auto-loop
+      encoder.setDelay(1000);
+      encoder.start();
+      //var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+      while(j<ctr)
+      {
+      sourceCanvas = document.getElementById('canvas'+j);
+      sourcecontext = sourceCanvas.getContext("2d");
+      encoder.addFrame(sourcecontext); 
+      j++;
+      console.log(j);
+      }
+      encoder.finish();
+      //document.getElementById('canvasImg').src = 'data:image/gif;base64,'+encode64(encoder.stream().getData());      
+      }
+  encoder.finish();
+
+
+var content;
+if( isMobile.any() )
+   content = '<h3><b> Touch and hold to save image </b></h3><br>';
+  else
+   content   = '<h3><b> Right click to save image</b></h3><br>';
+  
+  
+  content += '<img id="canvasImg">';
+  $(content).prependTo("#saveGIF");
+  document.getElementById('canvasImg').src = 'data:image/gif;base64,'+encode64(encoder.stream().getData());
+  // here is the most important part because if you dont replace you will get a DOM 18 exception.
+  setToYellow5();
+  }
+function setToYellow5 ( ) 
+{ 
+ document.getElementById('reset').style.backgroundColor = "#E6E6E6"; 
+ document.getElementById('pencil').style.backgroundColor = "#E6E6E6"; 
+  document.getElementById('eraser').style.backgroundColor = "#E6E6E6"; 
+   document.getElementById('newpage').style.backgroundColor = "#E6E6E6"; 
+    document.getElementById('save').style.backgroundColor = "#FFFF00";
+        document.getElementById('animate1').style.backgroundColor = "#E6E6E6";
+        document.getElementById('reload').style.backgroundColor = "#E6E6E6";
+        document.getElementById('help').style.backgroundColor = "#E6E6E6";
+
+
+} 
+count=0;
+
+function fclose()
+{
+  j=0;
+}
+/*function help123(img)
+{
+  var path = "C:\Users\onelab\Downloads\image.png"
+  window.open(path,"help","menubar=0,resizable=0,width=200,height=200")
+}
+*/
+function reset()
+{
+
+        curcanvas = document.getElementById('canvas'+(ctr-1));
+        context = curcanvas.getContext("2d");
+        context.fillStyle   = '#FF8E00'; // set canvas background color
+        context.clearRect(0,0, curcanvas.width,curcanvas.height);
+
+  clickX = [];
+   clickY = [];
+   clickDrag=[];
+   clickColor=[];
+   clickSize=[];
+
+  context.fillRect(0,0, canvas.width,canvas.height);
+  setToYellow6();
+}
+function setToYellow6 ( ) 
+{ 
+ document.getElementById('save').style.backgroundColor = "#E6E6E6"; 
+ document.getElementById('pencil').style.backgroundColor = "#E6E6E6"; 
+  document.getElementById('eraser').style.backgroundColor = "#E6E6E6"; 
+   document.getElementById('newpage').style.backgroundColor = "#E6E6E6"; 
+    document.getElementById('reset').style.backgroundColor = "#FFFF00";
+        document.getElementById('animate1').style.backgroundColor = "#E6E6E6";
+        document.getElementById('reload').style.backgroundColor = "#E6E6E6";
+        document.getElementById('help').style.backgroundColor = "#E6E6E6";
+
+
+} 
+
+
+ </script>
+
+ </head>
+  <body onload="canvasCreate()"  style="background-color:#FFFFFF" align="center">
+     <div class="container">
+
+    <h2><b>Digital Flipbook</b></h2>
+    <div>
+  <button id="pencil" onclick="pencil()"><img src="img/pencil.png" alt="Smiley face" height="42" width="50"></button>
+   
+  <button id="eraser" onclick="eraser()"><img src="img/eraser.png" alt="Smiley face" height="42" width="42">
+</button>
+  <button id="newpage" onclick="canvasCreate()"><img src="img/newpage.png" alt="Smiley face" height="42" width="42">
+</button>
+
+<button id="animate1" data-toggle="modal" href="#myModal" onclick="animate()"><img src="img/preview.png" alt="Smiley face" height="42" width="42"></button>
+<button id="save" onclick="save()"><img src="img/save.png" alt="Smiley face" height="42" width="42">
+  </button>
+  <button id="reset" onclick="reset()"><img src="img/redo.png" alt="Smiley face" height="42" width="42">
+  <!--new 4th features use the id of "reset"-->
+  </button>
+ <button id="reload" onclick="reload()"><img src="img/reload.png" alt="Smiley face" height="42" width="42">
+ <!--old "reload" button, replace the original id of "reset" with "reload" . Please change the button-highlight function accordingly.-->
+ </button>  
+ <button id ="help" data-toggle="modal" href="#helpModal" ><img src="img/help.png" alt="Smiley face" height="42" width="42">
+
+  </button>
+      <div id="saveGIF">
+      
+      </div>
+  <div id="canvasDiv" ></div>
+  <canvas width="480px" height="320px" id="dummy" style="display:none;"></canvas>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Preview</h2>
+        </div>
+        <div class="modal-body" style="background-color:#FF8E00;" align="center">
+        <div id="animate"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal" onclick="fclose()">Close</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div>
+  
+<div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Help</h2>
+        </div>
+        <div class="modal-body" style="background-color:#FF8E00;" align="center">
+        <div id="help1">
+         <table border="2">
+<tr>
+<td><img src="img/pencil.png" alt="Smiley face" height="42" width="50"><p>Pencil            </td>
+<td><img src="img/eraser.png" alt="Smiley face" height="42" width="42"><p>
+ Eraser            </p></td>
+</tr>
+<tr>
+<td><img src="img/newpage.png" alt="Smiley face" height="42" width="42"><p>New page            </p></td>
+<td><img src="img/reload.png" alt="Smiley face" height="42" width="42"><p>Start over            </p></td>
+</tr>
+<tr>
+<td><img src="img/preview.png" alt="Smiley face" height="42" width="42"><p>Preview            </p></td>
+<td><img src="img/save.png" alt="Smiley face" height="42" width="42"><p>
+Save            </p></td>
+</tr>
+<tr>
+  <td><img src="img/redo.png" alt="Smiley face" height="42" width="42"><p>
+Redo frame            </p></td>
+<td><img src="img/help.png" alt="Smiley face" height="42" width="42"><p>
+Help            </p></td>
+</tr>
+</table>
+   
+        </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal" onclick="fclose()">Close</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div>
+</div>
+</div>
+      <script src="js/bootstrap.min.js"></script>
+
+ </body>
+</html>
